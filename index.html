@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Latest Videos</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f9f9f9;
+    }
+    .container {
+      width: 90%;
+      max-width: 800px;
+      margin: 20px auto;
+      background: white;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .video {
+      margin-bottom: 20px;
+    }
+    .video a {
+      text-decoration: none;
+      color: #1a73e8;
+    }
+    .links {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Latest Videos</h1>
+    <div id="videos"></div>
+  </div>
+
+  <script>
+    const channelId = "UCFkNfDCdWZft3eXhHPFV4XQ"; // Replace with your channel's ID
+    const apiKey = "YOUR_YOUTUBE_API_KEY"; // Replace with your API key
+    const videosContainer = document.getElementById('videos');
+
+    async function fetchVideos() {
+      try {
+        // Fetch latest videos from the channel
+        const response = await fetch(
+          `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=5&order=date&type=video&key=${apiKey}`
+        );
+        const data = await response.json();
+
+        if (data.items) {
+          data.items.forEach(video => {
+            const videoId = video.id.videoId;
+            const title = video.snippet.title;
+            
+            // Fetch video details to get the description
+            fetchVideoDetails(videoId, title);
+          });
+        } else {
+          videosContainer.innerHTML = "No videos found or an error occurred.";
+        }
+      } catch (error) {
+        console.error('Error fetching videos:', error);
+      }
+    }
+
+    async function fetchVideoDetails(videoId, title) {
+      try {
+        const response = await fetch(
+          `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${apiKey}`
+        );
+        const data = await response.json();
+
+        if (data.items && data.items[0]) {
+          const description = data.items[0].snippet.description;
+
+          // Extract links from the description
+          const links = extractLinks(description);
+
+          // Render the video and links
+          renderVideo(videoId, title, links);
+        }
+      } catch (error) {
+        console.error('Error fetching video details:', error);
+      }
+    }
+
+    function extractLinks(text) {
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+      return text.match(urlRegex) || [];
+    }
+
+    function renderVideo(videoId, title, links) {
+      const videoDiv = document.createElement('div');
+      videoDiv.className = 'video';
+
+      videoDiv.innerHTML = `
+        <h2><a href="https://www.youtube.com/watch?v=${videoId}" target="_blank">${title}</a></h2>
+        <iframe width="100%" height="315" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>
+        <div class="links">
+          <h3>Links in Description:</h3>
+          <ul>
+            ${links.map(link => `<li><a href="${link}" target="_blank">${link}</a></li>`).join('')}
+          </ul>
+        </div>
+      `;
+
+      videosContainer.appendChild(videoDiv);
+    }
+
+    fetchVideos();
+  </script>
+</body>
+</html>
